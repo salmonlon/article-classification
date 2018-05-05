@@ -43,20 +43,19 @@ if __name__ == '__main__':
         # second expriment
         # experiment1_tf_idf(topic_data, y)
 
-        # todo: TF-IDF transform
 
         # classification
 
         # create pipeline
-        doc_classification = Pipeline(
-            [('vect', CountVectorizer(binary=True)),
-             ('clf', LogisticRegressionCV())]
-        )
-
-        # training the model
-        doc_classification = doc_classification.fit(X_train, y_train)
-
-        prediction = doc_classification.predict(X_test)
-        acc = accuracy_score(y_test, prediction)
-        print('Accuracy: {0:.2f}'.format(acc))
+        # doc_classification = Pipeline(
+        #     [('vect', CountVectorizer(binary=True)),
+        #      ('clf', LogisticRegressionCV())]
+        # )
+        #
+        # # training the model
+        # doc_classification = doc_classification.fit(X_train, y_train)
+        #
+        # prediction = doc_classification.predict(X_test)
+        # acc = accuracy_score(y_test, prediction)
+        # print('Accuracy: {0:.2f}'.format(acc))
 

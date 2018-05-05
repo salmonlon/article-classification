@@ -1,4 +1,3 @@
-import nltk
 import numpy as np
 import matplotlib.pyplot as plt
 from csv import reader
@@ -7,36 +6,41 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.model_selection import cross_val_predict, cross_val_score, train_test_split
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, confusion_matrix
-from util import plot_confusion_matrix
+from nltk.stem.snowball import SnowballStemmer
+
+
+class StemmedCountVectorizer(CountVectorizer):
+    def build_analyzer(self):
+        analyzer = super(StemmedCountVectorizer, self).build_analyzer()
+        return lambda doc: ([stemmer.stem(w) for w in analyzer(doc)])
 
 
 # global variables
 label_names = []
+acc = []
 
 '''Experiments are presented in the format of classification pipeline'''
 # counts all the occurrence of all the words in all documents
+
 # default setting for vectorizer:
 # analyser: single word (other options: char n-grams)
 # ngram_range: (1,1) / (min, max)
 # stop words: None
 # lowercase: True
 # max_features: None (limit the number of features by their occurrence)
-# binary: True
-# vectorizer = CountVectorizer(binary=True)
-# generate document-term matrix from training data
-# doc_term = vectorizer.fit_transform(X_train)
-experiment0 = Pipeline(
+# binary: False
+# min_df: 1, discard low frequency words
+experiment0_baseline = Pipeline(
     [
-        ('vect', CountVectorizer(binary=True)),
+        ('vect', CountVectorizer()),
         ('clf', LogisticRegressionCV())
     ]
 )
 
 # TF-IDF features
-experiment1 = Pipeline(
+experiment1_tf_idf = Pipeline(
     [
-        ('vect', CountVectorizer(binary=False)),
+        ('vect', CountVectorizer()),
         ('tfidf', TfidfTransformer()),
         ('clf', LogisticRegressionCV())
     ]
@@ -44,9 +48,27 @@ experiment1 = Pipeline(
 
 # todo: find optimal N
 # n-gram features
-expriment2 = Pipeline(
+experiment2_2_gram = Pipeline(
     [
-        ('vect', CountVectorizer(binary=False, ngram_range=(1,3))),
+        ('vect', CountVectorizer(ngram_range=(1,2))),
+        ('tfidf', TfidfTransformer()),
+        ('clf', LogisticRegressionCV())
+    ]
+)
+
+# remove stop words
+experiment3_stop_words = Pipeline(
+    [
+        ('vect', CountVectorizer(stop_words='english')),
+        ('tfidf', TfidfTransformer()),
+        ('clf', LogisticRegressionCV())
+    ]
+)
+
+# stemming
+experiment4_stem = Pipeline(
+    [
+        ('vect', StemmedCountVectorizer(stop_words='english')),
         ('tfidf', TfidfTransformer()),
         ('clf', LogisticRegressionCV())
     ]
@@ -58,38 +80,12 @@ parameters = {
 }
 
 
-def experiment0_baseline(X, y, cm=False):
-    '''
-    Baseline experiment
-    :param X: Full training data
-    :param y: Full labels
-    :param cm: display confusion matrix if True,
-    :return:
-    '''
-    clf = experiment0.fit(X, y)
-    if cm:
-        y_hat = cross_val_predict(clf, X, y, cv=10)
-        cm = confusion_matrix(y, y_hat)
-        np.set_printoptions(precision=2)
-        plt.figure()
-        plot_confusion_matrix(cm, classes=label_names, title='Confusion matrix, without normalization')
-        plt.show()
-    else:
-        # 10-fold CROSS VALIDATION
-        cv = cross_val_score(clf, X, y, cv=10)
-        print("Accuracy: %0.4f (+/- %0.4f)" % (cv.mean(), cv.std() * 2))
-
-
-def experiment1_tf_idf(X, y):
-    clf = experiment1.fit(X, y)
+def experiment(pipeline, X, y):
+    clf = pipeline.fit(X, y)
     cv = cross_val_score(clf, X, y, cv=10)
+    acc.append(cv)
     print("Accuracy: %0.4f (+/- %0.4f)" % (cv.mean(), cv.std() * 2))
 
-
-def experiment2_2_gram(X, y):
-    clf = expriment2.fit(X, y)
-    cv = cross_val_score(clf, X, y)
-    print("Accuracy: %0.4f (+/- %0.4f)" % (cv.mean(), cv.std() * 2))
 
 
 if __name__ == '__main__':
@@ -107,36 +103,31 @@ if __name__ == '__main__':
         y = le.fit_transform(true_labels)
         label_names = le.classes_
 
+        # Uncomment the experiment you wish to perform
+
+        # baseline experiment
+        print('Bag-of-word')
+        # experiment(experiment0_baseline, topic_data, y)
+
         # first experiment
-        # experiment0_baseline(topic_data, y)
+        print('TF-IDF weighting')
+        # experiment(experiment1_tf_idf, topic_data, y)
 
-        # second expriment
-        # experiment1_tf_idf(topic_data, y)
+        # second experiment
+        print('2-gram')
+        # experiment(experiment2_2_gram, topic_data, y)
 
-        # third expriment
-        experiment2_2_gram(topic_data, y)
+        # third experiment
+        # removing stop words
+        print('Remove stop words')
+        # experiment(experiment3_stop_words, topic_data, y)
 
-        # todo: TF-IDF transform
+        # fourth experiment
+        print('Stemming')
+        stemmer = SnowballStemmer('english', ignore_stopwords=True)
+        experiment(experiment4_stem, topic_data, y)
 
-        # classification
+        # fifth experiment
 
-        # create pipeline
-        # doc_classification = Pipeline(
-        #     [('vect', CountVectorizer(binary=True)),
-        #      ('clf', LogisticRegressionCV())]
-        # )
-        #
-        # # training the model
-        # doc_classification = doc_classification.fit(X_train, y_train)
-        #
-        # prediction = doc_classification.predict(X_test)
-        # acc = accuracy_score(y_test, prediction)
-        # print('Accuracy: {0:.2f}'.format(acc))
-        #
-        # cm = confusion_matrix(y_test, prediction)
-        # np.set_printoptions(precision=2)
-        # plt.figure()
-        # plot_confusion_matrix(cm, classes=label_names, title='Confusion matrix, without normalization')
-        # plt.show()
 
 
