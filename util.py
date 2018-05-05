@@ -16,6 +16,8 @@ def label_to_vector(l, c):
     return l_vec
 
 
+# from: http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
+# #sphx-glr-auto-examples-model-selection-plot-confusion-matrix-py
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
