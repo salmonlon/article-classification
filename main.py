@@ -1,27 +1,46 @@
+#!/usr/bin/env python -W ignore::DeprecationWarning
+
 from csv import reader
 from sklearn.preprocessing import LabelEncoder
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 from sklearn.model_selection import cross_val_predict, cross_val_score, train_test_split
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.pipeline import Pipeline
 from nltk.stem.snowball import SnowballStemmer
-from nltk.stem import WordNetLemmatizer
+from preprocessor import NLTKPreprocessor
 
 
 # from: https://towardsdatascience.com/machine-learning-nlp-text-
 # classification-using-scikit-learn-python-and-nltk-c52b92a7c73a
 # start
 class StemmedCountVectorizer(CountVectorizer):
+    """
+    CountVectorizer wrapper for performing stemming
+    """
     def build_analyzer(self):
         analyzer = super(StemmedCountVectorizer, self).build_analyzer()
         return lambda doc: ([stemmer.stem(w) for w in analyzer(doc)])
 # end
 
 
-class LemmatizerCountVectorizer(CountVectorizer):
-    def build_analyzer(self):
-        analyzer = super(LemmatizerCountVectorizer, self).build_analyzer()
-        return lambda doc: (lemmatizer.lemmatize(w) for w in analyzer(doc))
+def identity(arg):
+    """
+    Simple identity function works as a passthrough.
+    """
+    return arg
+
+
+def experiment(pipeline, X, y):
+    """
+    perform 10-fold cross validation experiment using pipeline setup
+    :param pipeline: experiment setup
+    :param X: raw document data
+    :param y: corresponding labels
+    """
+    clf = pipeline.fit(X, y)
+    cv = cross_val_score(clf, X, y, cv=10)
+    acc.append(cv)
+    print("Accuracy: %0.4f (+/- %0.4f)" % (cv.mean(), cv.std() * 2))
 
 
 # global variables
@@ -83,26 +102,14 @@ experiment4_stem = Pipeline(
     ]
 )
 
-# lemmatizing
-experiment5_lemmatizing = Pipeline(
+# WordNet lemmatization
+experiment5_pos = Pipeline(
     [
-        ('vect', LemmatizerCountVectorizer(stop_words='english')),
-        ('tfidf', TfidfTransformer()),
+        ('vect', NLTKPreprocessor()),
+        ('tfidf', TfidfVectorizer(tokenizer=identity, preprocessor=None, lowercase=False)),
         ('clf', LogisticRegressionCV())
     ]
 )
-
-parameters = {
-    'vect__binary': (True, False),
-    'clf__class_weight': ('balanced', None)
-}
-
-
-def experiment(pipeline, X, y):
-    clf = pipeline.fit(X, y)
-    cv = cross_val_score(clf, X, y, cv=10)
-    acc.append(cv)
-    print("Accuracy: %0.4f (+/- %0.4f)" % (cv.mean(), cv.std() * 2))
 
 
 if __name__ == '__main__':
@@ -123,31 +130,29 @@ if __name__ == '__main__':
         # Uncomment the experiment you wish to perform
 
         # baseline experiment
-        print('Bag-of-word')
-        experiment(experiment0_baseline, topic_data, y)
-
-        # first experiment
-        print('TF-IDF weighting')
-        experiment(experiment1_tf_idf, topic_data, y)
-
-        # second experiment
-        print('bigram')
-        experiment(experiment2_bigram, topic_data, y)
-
-        # third experiment
-        # removing stop words
-        print('Remove stop words')
-        experiment(experiment3_stop_words, topic_data, y)
-
-        # fourth experiment
-        print('Stemming')
-        stemmer = SnowballStemmer('english', ignore_stopwords=True)
-        experiment(experiment4_stem, topic_data, y)
+        # print('Bag-of-word')
+        # experiment(experiment0_baseline, topic_data, y)
+        #
+        # # first experiment
+        # print('TF-IDF weighting')
+        # experiment(experiment1_tf_idf, topic_data, y)
+        #
+        # # second experiment
+        # print('bigram')
+        # experiment(experiment2_bigram, topic_data, y)
+        #
+        # # third experiment
+        # # removing stop words
+        # print('Remove stop words')
+        # experiment(experiment3_stop_words, topic_data, y)
+        #
+        # # fourth experiment
+        # print('Stemming')
+        # stemmer = SnowballStemmer('english', ignore_stopwords=True)
+        # experiment(experiment4_stem, topic_data, y)
 
         # fifth experiment
-        print('Lemmatizing')
-        lemmatizer = WordNetLemmatizer()
-        experiment(experiment5_lemmatizing, topic_data, y)
+        experiment(experiment5_pos, topic_data, y)
 
 
 
