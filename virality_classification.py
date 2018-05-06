@@ -3,7 +3,7 @@
 from csv import reader
 from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
-from sklearn.model_selection import cross_val_predict, cross_val_score, train_test_split
+from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.pipeline import Pipeline
 from nltk.stem.snowball import SnowballStemmer
@@ -102,7 +102,7 @@ experiment4_stem = Pipeline(
     ]
 )
 
-# WordNet lemmatization
+# POS lemmatization
 experiment5_pos = Pipeline(
     [
         ('vect', NLTKPreprocessor()),
@@ -113,46 +113,44 @@ experiment5_pos = Pipeline(
 
 
 if __name__ == '__main__':
-    with open('topic.csv', 'r') as f:
-        topic_data = list(reader(f))[1:]
+    with open('virality.csv', 'r') as f:
+        virality_data = list(reader(f))[1:]
 
         # ground truth labels
-        true_labels = [x[0] for x in topic_data]
+        true_labels = [x[0] for x in virality_data]
 
         # pre-processing raw data
         # merging title and body
-        topic_data = [x[2] + ' ' + x[3] for x in topic_data]
+        virality_data = [x[2] + ' ' + x[3] for x in virality_data]
         # convert string labels to integer
         le = LabelEncoder()
         y = le.fit_transform(true_labels)
         label_names = le.classes_
 
-        # Uncomment the experiment you wish to perform
-
         # baseline experiment
-        # print('Bag-of-word')
-        # experiment(experiment0_baseline, topic_data, y)
+        print('Bag-of-word')
+        experiment(experiment0_baseline, virality_data, y)
         #
         # # first experiment
-        # print('TF-IDF weighting')
-        # experiment(experiment1_tf_idf, topic_data, y)
+        print('TF-IDF weighting')
+        experiment(experiment1_tf_idf, virality_data, y)
         #
         # # second experiment
-        # print('bigram')
-        # experiment(experiment2_bigram, topic_data, y)
+        print('bigram')
+        experiment(experiment2_bigram, virality_data, y)
         #
         # # third experiment
         # # removing stop words
-        # print('Remove stop words')
-        # experiment(experiment3_stop_words, topic_data, y)
+        print('Remove stop words')
+        experiment(experiment3_stop_words, virality_data, y)
         #
         # # fourth experiment
-        # print('Stemming')
-        # stemmer = SnowballStemmer('english', ignore_stopwords=True)
-        # experiment(experiment4_stem, topic_data, y)
+        print('Stemming')
+        stemmer = SnowballStemmer('english', ignore_stopwords=True)
+        experiment(experiment4_stem, virality_data, y)
 
         # fifth experiment
-        experiment(experiment5_pos, topic_data, y)
+        experiment(experiment5_pos, virality_data, y)
 
 
 
